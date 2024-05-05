@@ -1,7 +1,5 @@
 // This is a file that contains the opengl basic functions and boiler plate
-#include "include/glad/glad.h"
-#include <GLFW/glfw3.h>
-//#include <KHR/khrplatform.h>
+#include "include/gl_basics.h"
 
 
 

@@ -2,6 +2,7 @@
 #include "include/glad/glad.h"
 #include <GLFW/glfw3.h>
 #include "include/gl_basics.h"
+#include "include/shaders.h"
 #include "include/geometry.h"
 //#include <KHR/khrplatform.h>
 #include <stdio.h>
@@ -18,7 +19,7 @@ void processInput(GLFWwindow *window);
 
 
 int main()
-{
+{	
     	//////// INITIALIZATION
 	// this function performs all the necessary initialization and creates a window that is linked to the opengl viewport
 	GLFWwindow* window;
@@ -38,14 +39,14 @@ int main()
     	};
 
 	
-	// 
-	unsigned int VAO;
-    	// Creating a vertex buffer object (Which is how we store the vertex data in the gpu)
-    	unsigned int VBO;
+    	// Creating a vertex buffer object VBO (Which is how we store the vertex data to send it to the GPU)
+	// and VAO is a vertex array buffer object which is an array of VBOs which makes accessing and treating them easier
+    	GLuint VAO, VBO;
 	//initializeBuffers(&VAO, &VBO, vertices, GL_ARRAY_BUFFER);
-	//////////
+	
 	glGenVertexArrays(1, &VAO);
     	glBindVertexArray(VAO); 
+
 
     	glGenBuffers(1, &VBO); // 1 because we only need 1 buffer and vbo is the id of this buffer
 	
@@ -58,40 +59,20 @@ int main()
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
-
+	
     	//////// SHADERS
     	// OpenGL requires a vertex shader and fragment shader in order to render geometry
     	// Vertex shader
     	// This shader is responsible for positioning the vertices on screen it has to be compiled at runtime so i'm putting it in a constant but it could be a file
-    	const char *vertexShaderSource = "#version 330 core\n"
-    	"in vec3 vp;\n"
-    	"void main()\n"
-    	"{\n"
-    	"   gl_Position = vec4(vp, 1.0);\n"
-    	"}\0";
-    
     	// This is the shader object
     	unsigned int vertexShader;
-	// this function will create the shader object and compile the source into it returning 1 upon success and 0 upon failure
-	if (!createVertexShader(&vertexShader, vertexShaderSource)) {
-			printf("Vertex shader compilation error!\n");
-			glfwTerminate();
-			return 1;
-	}
-
-    	// Fragment shader
-    	const char *fragmentShaderSource = "#version 330 core\n"
-    	"out vec4 FragColor;\n"
-    	"void main()\n"
-    	"{\n"
-    	"   FragColor = vec4(0.0f, 0.5f, 1.0f, 1.0f);\n"
-    	"}\0";
-    
 	unsigned int fragmentShader;
-    	if (!createFragmentShader(&fragmentShader, fragmentShaderSource)) {
-		printf("Fragment shader compilation error!\n");
-		glDeleteShader(vertexShader);
+
+	// This function will load the shader code from the files, compile it then put it in a shader object
+    	if (!shadersFromFile("../resources/shader.vert", "../resources/shader.frag", &vertexShader, &fragmentShader)) {
+		printf("Shader loading error!\n");
 	    	glfwTerminate();
+		glfwDestroyWindow(window);
 	    	return 1;
     	}
 
@@ -111,8 +92,6 @@ int main()
     	glDeleteShader(fragmentShader);
 
 
-
-
     	//////// MAIN LOOP
     	while(!glfwWindowShouldClose(window))
     	{
@@ -124,6 +103,7 @@ int main()
 		// Geometry
 		glUseProgram(shaderProgram);
 		glBindVertexArray(VAO);
+		// Triangles is the type of primitives we're using
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
         	// RENDERING
@@ -133,12 +113,16 @@ int main()
         	// This function takes the input from the user like keyboard and mouse
         	glfwPollEvents();
 
-        	// EVENTS AND BUFFER
-        	// From what I understand OpenGL has 2 viewport buffers one that it won't edit because it's being diplayed
-        	// and the other one is being rendered to. We need to call this function to update what it's showing
+        	// From what I understand OpenGL has 2 viewport buffers one that it won't edit because it's being displayed
+        	// and the other one is being rendered to. We need to call this function to swap them and show what was drawn
         	glfwSwapBuffers(window);
     	}
+	
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(1, &VBO);
+	glDeleteProgram(shaderProgram);
 
+	glfwDestroyWindow(window);
     	glfwTerminate();
     	return 0;
 }
